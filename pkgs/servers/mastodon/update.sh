@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p yarn2nix bundix coreutils diffutils nix-prefetch-github gnused jq
+#! nix-shell -I nixpkgs=../../../ -i bash -p yarn2nix bundix coreutils diffutils nix-prefetch-github gnused jq
 set -e
 
 OWNER=mastodon
@@ -70,6 +70,7 @@ fi
 # Delete the working directory on exit.
 function cleanup {
     # Report errors, if any, from nix-prefetch-git
+    cat $WORK_DIR/nix-prefetch-git.out 
     grep "fatal" $WORK_DIR/nix-prefetch-git.out >/dev/stderr || true
     rm -rf "$WORK_DIR"
 }
