@@ -1,6 +1,19 @@
-{ lib, stdenv, nodejs-slim, mkYarnPackage, fetchFromGitHub, bundlerEnv, nixosTests
-, yarn, callPackage, imagemagick, ffmpeg, file, ruby_3_0, writeShellScript
-, fetchYarnDeps, fixup_yarn_lock
+{ lib
+, stdenv
+, nodejs-slim
+, mkYarnPackage
+, fetchFromGitHub
+, bundlerEnv
+, nixosTests
+, yarn
+, callPackage
+, imagemagick
+, ffmpeg
+, file
+, ruby_3_0
+, writeShellScript
+, fetchYarnDeps
+, fixup_yarn_lock
 , brotli
 
   # Allow building a fork or custom version of Mastodon:
@@ -15,7 +28,7 @@ stdenv.mkDerivation rec {
 
   # Using overrideAttrs on src does not build the gems and modules with the overridden src.
   # Putting the callPackage up in the arguments list also does not work.
-  src = if srcOverride != null then srcOverride else callPackage ./source.nix {};
+  src = if srcOverride != null then srcOverride else callPackage ./source.nix { };
 
   mastodonGems = bundlerEnv {
     name = "${pname}-gems-${version}";
@@ -43,7 +56,7 @@ stdenv.mkDerivation rec {
 
     yarnOfflineCache = fetchYarnDeps {
       yarnLock = "${src}/yarn.lock";
-      sha256 = "sha256-e3rl/WuKXaUdeDEYvo1sSubuIwtBjkbguCYdAijwXOA=";
+      sha256 = "sha256-IQUaEF2ORgv7x1pf+3P0GYHvbGIKn22r6jKsayfCW/M=";
     };
 
     nativeBuildInputs = [ fixup_yarn_lock nodejs-slim yarn mastodonGems mastodonGems.wrappedRuby brotli ];
@@ -139,20 +152,22 @@ stdenv.mkDerivation rec {
     runHook postBuild
   '';
 
-  installPhase = let
-    run-streaming = writeShellScript "run-streaming.sh" ''
-      # NixOS helper script to consistently use the same NodeJS version the package was built with.
-      ${nodejs-slim}/bin/node ./streaming
+  installPhase =
+    let
+      run-streaming = writeShellScript "run-streaming.sh" ''
+        # NixOS helper script to consistently use the same NodeJS version the package was built with.
+        ${nodejs-slim}/bin/node ./streaming
+      '';
+    in
+    ''
+      runHook preInstall
+
+      mkdir -p $out
+      cp -r * $out/
+      ln -s ${run-streaming} $out/run-streaming.sh
+
+      runHook postInstall
     '';
-  in ''
-    runHook preInstall
-
-    mkdir -p $out
-    cp -r * $out/
-    ln -s ${run-streaming} $out/run-streaming.sh
-
-    runHook postInstall
-  '';
 
   passthru = {
     tests.mastodon = nixosTests.mastodon;
